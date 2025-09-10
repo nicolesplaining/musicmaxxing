@@ -208,14 +208,11 @@ def search_user_activity(username):
         
         query = request.args.get('q', '')
         days = request.args.get('days', 30, type=int)
-        all_time = request.args.get('all_time', 'false').lower() == 'true'
         
         if not query:
             return jsonify({'error': 'Search query is required'}), 400
         
-        # Use None for all time search
-        search_days = None if all_time else days
-        results = smart_db.search_tracks(query, search_days)
+        results = smart_db.search_tracks(query, days)
         
         return jsonify({
             'username': username,
@@ -225,44 +222,6 @@ def search_user_activity(username):
             'simple_db': True
         })
         
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/user/<username>/custom-range')
-def get_custom_range_stats(username):
-    """Get user stats for a custom date range"""
-    try:
-        # Only work with nnicolema user
-        if username != TARGET_USER:
-            return jsonify({'error': f'This app is optimized for {TARGET_USER} only'}), 400
-        
-        start_date = request.args.get('start_date')
-        end_date = request.args.get('end_date')
-        
-        if not start_date or not end_date:
-            return jsonify({'error': 'Both start_date and end_date are required'}), 400
-        
-        try:
-            # Parse dates
-            start_dt = datetime.strptime(start_date, '%Y-%m-%d')
-            end_dt = datetime.strptime(end_date, '%Y-%m-%d')
-            
-            # Get custom range stats from smart_db
-            stats = smart_db.get_custom_range_stats(start_dt, end_dt)
-            
-            if not stats:
-                return jsonify({'error': 'No data found for the specified date range'}), 404
-            
-            # Add date info to response
-            stats['start_date'] = start_date
-            stats['end_date'] = end_date
-            stats['date_range'] = f"{start_date} to {end_date}"
-            
-            return jsonify(stats)
-            
-        except ValueError:
-            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
-            
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -471,4 +430,5 @@ def shoegaze_analytics():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5002)
+    port = int(os.environ.get('PORT', 5001))
+    app.run(debug=False, host='0.0.0.0', port=port)
