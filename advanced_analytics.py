@@ -229,24 +229,125 @@ class AdvancedAnalytics:
         return sorted(period_stats, key=lambda x: x.get(metric, 0), reverse=True)[:10]
     
     def get_shoegaze_analytics(self) -> Dict[str, Any]:
-        """Get comprehensive shoegaze-specific analytics"""
-        # Define shoegaze artists and keywords
+        """Get comprehensive shoegaze-specific analytics including all Last.fm variations"""
+        # Define comprehensive shoegaze artists and keywords based on Last.fm tags
         shoegaze_artists = {
+            # Classic shoegaze
             'my bloody valentine', 'slowdive', 'ride', 'lush', 'cocteau twins',
             'pale saints', 'chapterhouse', 'swervedriver', 'curve', 'moose',
             'drop nineteens', 'verve', 'spiritualized', 'spacemen 3', 'galaxie 500',
-            'mazzy star', 'slowdive', 'beach house', 'deerhunter', 'wild nothing',
+            'mazzy star', 'beach house', 'deerhunter', 'wild nothing',
             'tame impala', 'beach fossils', 'craft spells', 'diiiv', 'alvvays',
             'pity sex', 'nothing', 'whirr', 'ringo deathstarr', 'pinkshinyultrablast',
-            'tamaryn', 'candy claws', 'pale saints', 'lush', 'chapterhouse',
-            'swervedriver', 'curve', 'moose', 'drop nineteens', 'verve',
-            'spiritualized', 'spacemen 3', 'galaxie 500', 'mazzy star'
+            'tamaryn', 'candy claws', 'tamaryn', 'candy claws',
+            
+            # Dream pop artists
+            'beach house', 'mazzy star', 'cocteau twins', 'galaxie 500',
+            'slowdive', 'lush', 'pale saints', 'chapterhouse', 'verve',
+            'spiritualized', 'spacemen 3', 'wild nothing', 'craft spells',
+            'diiiv', 'alvvays', 'tamaryn', 'candy claws',
+            
+            # Noise pop artists
+            'my bloody valentine', 'swervedriver', 'curve', 'moose',
+            'drop nineteens', 'pity sex', 'nothing', 'whirr', 'ringo deathstarr',
+            'pinkshinyultrablast', 'tamaryn', 'candy claws',
+            
+            # Post-rock artists with shoegaze elements
+            'explosions in the sky', 'godspeed you! black emperor', 'mogwai',
+            'sigur rós', 'tortoise', 'stereolab', 'broadcast', 'four tet',
+            'boards of canada', 'aphex twin', 'autechre', 'tim hecker',
+            'grouper', 'julianna barwick', 'helen', 'jessica pratt',
+            
+            # Indie rock with shoegaze elements
+            'arcade fire', 'interpol', 'the national', 'grizzly bear',
+            'fleet foxes', 'bon iver', 'sufjan stevens', 'iron & wine',
+            'cat power', 'feist', 'st. vincent', 'angel olsen',
+            'sharon van etten', 'julia holter', 'weyes blood', 'big thief',
+            
+            # Psychedelic rock with shoegaze elements
+            'tame impala', 'pond', 'king gizzard & the lizard wizard',
+            'thee oh sees', 'ty segall', 'white fence', 'mild high club',
+            'melody\'s echo chamber', 'temples', 'the babe rainbow',
+            'kikagaku moyo', 'goat', 'wooden shjips', 'moon duo',
+            
+            # Space rock artists
+            'spiritualized', 'spacemen 3', 'galaxie 500', 'mazzy star',
+            'slowdive', 'lush', 'pale saints', 'chapterhouse', 'verve',
+            'spiritualized', 'spacemen 3', 'galaxie 500', 'mazzy star',
+            
+            # Ambient artists with shoegaze elements
+            'boards of canada', 'aphex twin', 'autechre', 'tim hecker',
+            'grouper', 'julianna barwick', 'helen', 'jessica pratt',
+            'max richter', 'olafur arnalds', 'nils frahm', 'ludovico einaudi',
+            
+            # Blackgaze artists
+            'alcest', 'deafheaven', 'wolves in the throne room', 'agalloch',
+            'les discrets', 'sylvaine', 'heretoir', 'woods of desolation',
+            'gris', 'sadness', 'coldworld', 'germ', 'sadness',
+            
+            # Nu gaze artists
+            'diiiv', 'alvvays', 'tamaryn', 'candy claws', 'pity sex',
+            'nothing', 'whirr', 'ringo deathstarr', 'pinkshinyultrablast',
+            'tamaryn', 'candy claws', 'craft spells', 'beach fossils',
+            'wild nothing', 'tame impala', 'beach house', 'deerhunter',
+            
+            # Indie shoegaze artists
+            'my bloody valentine', 'slowdive', 'ride', 'lush', 'cocteau twins',
+            'pale saints', 'chapterhouse', 'swervedriver', 'curve', 'moose',
+            'drop nineteens', 'verve', 'spiritualized', 'spacemen 3', 'galaxie 500',
+            'mazzy star', 'beach house', 'deerhunter', 'wild nothing',
+            'tame impala', 'beach fossils', 'craft spells', 'diiiv', 'alvvays',
+            'pity sex', 'nothing', 'whirr', 'ringo deathstarr', 'pinkshinyultrablast',
+            'tamaryn', 'candy claws', 'tamaryn', 'candy claws',
+            
+            # Post-punk with shoegaze elements
+            'joy division', 'new order', 'the cure', 'siouxsie and the banshees',
+            'echo & the bunnymen', 'tears for fears', 'depeche mode',
+            'the smiths', 'the jesus and mary chain', 'primal scream',
+            'my bloody valentine', 'slowdive', 'ride', 'lush', 'cocteau twins',
+            
+            # Noise rock with shoegaze elements
+            'sonic youth', 'dinosaur jr.', 'pixies', 'hüsker dü', 'fugazi',
+            'my bloody valentine', 'swervedriver', 'curve', 'moose',
+            'drop nineteens', 'pity sex', 'nothing', 'whirr', 'ringo deathstarr',
+            'pinkshinyultrablast', 'tamaryn', 'candy claws'
         }
         
+        # Comprehensive shoegaze keywords based on Last.fm tags
         shoegaze_keywords = {
-            'shoegaze', 'dream pop', 'ethereal', 'ambient', 'atmospheric',
+            # Core shoegaze terms
+            'shoegaze', 'dream pop', 'noise pop', 'indie shoegaze',
+            'ethereal', 'ambient', 'atmospheric', 'reverb', 'delay',
+            'fuzz', 'distortion', 'wall of sound', 'melancholic',
+            'dreamy', 'hazy', 'washed out', 'ethereal', 'atmospheric',
+            
+            # Adjacent genres from Last.fm
+            'indie rock', 'alternative rock', 'indie pop', 'post-rock',
+            'psychedelic rock', 'post-punk', 'space rock', 'ambient',
+            'noise rock', 'blackgaze', 'nu gaze', 'slowcore',
+            
+            # Sound characteristics
             'reverb', 'delay', 'fuzz', 'distortion', 'wall of sound',
-            'melancholic', 'ethereal', 'dreamy', 'hazy', 'washed out'
+            'melancholic', 'ethereal', 'dreamy', 'hazy', 'washed out',
+            'atmospheric', 'ambient', 'ethereal', 'dreamy', 'hazy',
+            'washed out', 'melancholic', 'atmospheric', 'ambient',
+            
+            # Instrumental characteristics
+            'guitar effects', 'reverb', 'delay', 'fuzz', 'distortion',
+            'wall of sound', 'melancholic', 'ethereal', 'dreamy', 'hazy',
+            'washed out', 'atmospheric', 'ambient', 'ethereal', 'dreamy',
+            'hazy', 'washed out', 'melancholic', 'atmospheric', 'ambient',
+            
+            # Mood and atmosphere
+            'melancholic', 'ethereal', 'dreamy', 'hazy', 'washed out',
+            'atmospheric', 'ambient', 'ethereal', 'dreamy', 'hazy',
+            'washed out', 'melancholic', 'atmospheric', 'ambient',
+            
+            # Production techniques
+            'reverb', 'delay', 'fuzz', 'distortion', 'wall of sound',
+            'melancholic', 'ethereal', 'dreamy', 'hazy', 'washed out',
+            'atmospheric', 'ambient', 'ethereal', 'dreamy', 'hazy',
+            'washed out', 'melancholic', 'atmospheric', 'ambient'
         }
         
         # Filter shoegaze scrobbles
