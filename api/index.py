@@ -6,6 +6,8 @@ A Flask web application for visualizing Last.fm listening data
 
 import sys
 import os
+
+# Add the parent directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
@@ -17,22 +19,20 @@ import json
 import pickle
 
 app = Flask(__name__, 
-           template_folder='../templates',
-           static_folder='../static')
+           template_folder=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'templates'),
+           static_folder=os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'static'))
 app.secret_key = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
 
 # Global client instance
 client = None
 
 # Cache directory
-CACHE_DIR = "../cache"
+CACHE_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'cache')
 if not os.path.exists(CACHE_DIR):
     os.makedirs(CACHE_DIR)
 
 # Hardcoded user
 TARGET_USER = "nnicolema"
-
-# Simple database is already initialized in simple_db.py
 
 def get_client():
     """Get or create Last.fm client instance"""
@@ -475,7 +475,7 @@ def shoegaze_analytics():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# For Vercel
+# Vercel handler
 def handler(request):
     return app(request.environ, lambda status, headers: None)
 
