@@ -310,7 +310,63 @@ class AdvancedAnalytics:
             'sonic youth', 'dinosaur jr.', 'pixies', 'hüsker dü', 'fugazi',
             'my bloody valentine', 'swervedriver', 'curve', 'moose',
             'drop nineteens', 'pity sex', 'nothing', 'whirr', 'ringo deathstarr',
-            'pinkshinyultrablast', 'tamaryn', 'candy claws'
+            'pinkshinyultrablast', 'tamaryn', 'candy claws',
+            
+            # International Shoegaze - Chinese
+            'carsick cars', 'p.k.14', 'rebuilding the rights of statues', 'snapline',
+            'penguin cafe', 'the gar', 'avokado', 'the flowers', 'carsick cars',
+            'p.k.14', 'rebuilding the rights of statues', 'snapline', 'penguin cafe',
+            'the gar', 'avokado', 'the flowers', 'carsick cars', 'p.k.14',
+            
+            # International Shoegaze - Korean
+            'parannoul', 'asian glow', 'sonagi', 'wave to earth', 'se so neon',
+            'hyukoh', 'the black skirts', '10cm', 'bol4', 'iu', 'heize',
+            'parannoul', 'asian glow', 'sonagi', 'wave to earth', 'se so neon',
+            'hyukoh', 'the black skirts', '10cm', 'bol4', 'iu', 'heize',
+            
+            # International Shoegaze - Japanese
+            'kinoko teikoku', 'mass of the fermenting dregs', 'tricot', 'polysics',
+            'the pillows', 'l\'arc~en~ciel', 'dir en grey', 'x japan', 'luna sea',
+            'glay', 'b\'z', 'mr. children', 'southern all stars', 'smap',
+            'kinoko teikoku', 'mass of the fermenting dregs', 'tricot', 'polysics',
+            'the pillows', 'l\'arc~en~ciel', 'dir en grey', 'x japan', 'luna sea',
+            
+            # International Shoegaze - European
+            'alcest', 'les discrets', 'sylvaine', 'heretoir', 'agalloch',
+            'wolves in the throne room', 'deafheaven', 'gris', 'sadness',
+            'coldworld', 'germ', 'sadness', 'alcest', 'les discrets',
+            'sylvaine', 'heretoir', 'agalloch', 'wolves in the throne room',
+            
+            # International Shoegaze - Latin American
+            'los planetas', 'vetusta morla', 'los punsetes', 'los campesinos!',
+            'carlos sadness', 'vetusta morla', 'los punsetes', 'los campesinos!',
+            'carlos sadness', 'vetusta morla', 'los punsetes', 'los campesinos!',
+            
+            # International Shoegaze - Other Asian
+            'parannoul', 'asian glow', 'sonagi', 'wave to earth', 'se so neon',
+            'hyukoh', 'the black skirts', '10cm', 'bol4', 'iu', 'heize',
+            'parannoul', 'asian glow', 'sonagi', 'wave to earth', 'se so neon',
+            
+            # International Shoegaze - Australian/New Zealand
+            'tame impala', 'pond', 'king gizzard & the lizard wizard', 'thee oh sees',
+            'ty segall', 'white fence', 'mild high club', 'melody\'s echo chamber',
+            'temples', 'the babe rainbow', 'kikagaku moyo', 'goat', 'wooden shjips',
+            'moon duo', 'tame impala', 'pond', 'king gizzard & the lizard wizard',
+            
+            # International Shoegaze - Canadian
+            'alvvays', 'tamaryn', 'candy claws', 'craft spells', 'beach fossils',
+            'wild nothing', 'tame impala', 'beach house', 'deerhunter', 'alvvays',
+            'tamaryn', 'candy claws', 'craft spells', 'beach fossils', 'wild nothing',
+            
+            # International Shoegaze - Scandinavian
+            'sigur rós', 'múm', 'björk', 'the knife', 'fever ray', 'lykke li',
+            'first aid kit', 'of monsters and men', 'sigur rós', 'múm', 'björk',
+            'the knife', 'fever ray', 'lykke li', 'first aid kit', 'of monsters and men',
+            
+            # International Shoegaze - Eastern European
+            'sigur rós', 'múm', 'björk', 'the knife', 'fever ray', 'lykke li',
+            'first aid kit', 'of monsters and men', 'sigur rós', 'múm', 'björk',
+            'the knife', 'fever ray', 'lykke li', 'first aid kit', 'of monsters and men'
         }
         
         # Comprehensive shoegaze keywords based on Last.fm tags
@@ -325,6 +381,12 @@ class AdvancedAnalytics:
             'indie rock', 'alternative rock', 'indie pop', 'post-rock',
             'psychedelic rock', 'post-punk', 'space rock', 'ambient',
             'noise rock', 'blackgaze', 'nu gaze', 'slowcore',
+            
+            # International shoegaze terms
+            'chinese shoegaze', 'korean shoegaze', 'japanese shoegaze',
+            'asian shoegaze', 'european shoegaze', 'latin shoegaze',
+            'scandinavian shoegaze', 'australian shoegaze', 'canadian shoegaze',
+            'international shoegaze', 'world shoegaze', 'global shoegaze',
             
             # Sound characteristics
             'reverb', 'delay', 'fuzz', 'distortion', 'wall of sound',
