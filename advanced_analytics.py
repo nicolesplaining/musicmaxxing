@@ -229,17 +229,17 @@ class AdvancedAnalytics:
         return sorted(period_stats, key=lambda x: x.get(metric, 0), reverse=True)[:10]
     
     def get_shoegaze_analytics(self) -> Dict[str, Any]:
-        """Get comprehensive shoegaze-specific analytics including all Last.fm variations"""
-        # Define comprehensive shoegaze artists and keywords based on Last.fm tags
+        """Get focused shoegaze-specific analytics (actual shoegaze + international variations)"""
+        # Define focused shoegaze artists (actual shoegaze + international variations)
         shoegaze_artists = {
-            # Classic shoegaze
+            # Classic Shoegaze (UK/US)
             'my bloody valentine', 'slowdive', 'ride', 'lush', 'cocteau twins',
             'pale saints', 'chapterhouse', 'swervedriver', 'curve', 'moose',
             'drop nineteens', 'verve', 'spiritualized', 'spacemen 3', 'galaxie 500',
             'mazzy star', 'beach house', 'deerhunter', 'wild nothing',
             'tame impala', 'beach fossils', 'craft spells', 'diiiv', 'alvvays',
             'pity sex', 'nothing', 'whirr', 'ringo deathstarr', 'pinkshinyultrablast',
-            'tamaryn', 'candy claws', 'tamaryn', 'candy claws',
+            'tamaryn', 'candy claws',
             
             # Dream pop artists
             'beach house', 'mazzy star', 'cocteau twins', 'galaxie 500',
@@ -369,18 +369,13 @@ class AdvancedAnalytics:
             'the knife', 'fever ray', 'lykke li', 'first aid kit', 'of monsters and men'
         }
         
-        # Comprehensive shoegaze keywords based on Last.fm tags
+        # Focused shoegaze keywords
         shoegaze_keywords = {
             # Core shoegaze terms
             'shoegaze', 'dream pop', 'noise pop', 'indie shoegaze',
             'ethereal', 'ambient', 'atmospheric', 'reverb', 'delay',
             'fuzz', 'distortion', 'wall of sound', 'melancholic',
-            'dreamy', 'hazy', 'washed out', 'ethereal', 'atmospheric',
-            
-            # Adjacent genres from Last.fm
-            'indie rock', 'alternative rock', 'indie pop', 'post-rock',
-            'psychedelic rock', 'post-punk', 'space rock', 'ambient',
-            'noise rock', 'blackgaze', 'nu gaze', 'slowcore',
+            'dreamy', 'hazy', 'washed out',
             
             # International shoegaze terms
             'chinese shoegaze', 'korean shoegaze', 'japanese shoegaze',
@@ -388,28 +383,8 @@ class AdvancedAnalytics:
             'scandinavian shoegaze', 'australian shoegaze', 'canadian shoegaze',
             'international shoegaze', 'world shoegaze', 'global shoegaze',
             
-            # Sound characteristics
-            'reverb', 'delay', 'fuzz', 'distortion', 'wall of sound',
-            'melancholic', 'ethereal', 'dreamy', 'hazy', 'washed out',
-            'atmospheric', 'ambient', 'ethereal', 'dreamy', 'hazy',
-            'washed out', 'melancholic', 'atmospheric', 'ambient',
-            
-            # Instrumental characteristics
-            'guitar effects', 'reverb', 'delay', 'fuzz', 'distortion',
-            'wall of sound', 'melancholic', 'ethereal', 'dreamy', 'hazy',
-            'washed out', 'atmospheric', 'ambient', 'ethereal', 'dreamy',
-            'hazy', 'washed out', 'melancholic', 'atmospheric', 'ambient',
-            
-            # Mood and atmosphere
-            'melancholic', 'ethereal', 'dreamy', 'hazy', 'washed out',
-            'atmospheric', 'ambient', 'ethereal', 'dreamy', 'hazy',
-            'washed out', 'melancholic', 'atmospheric', 'ambient',
-            
-            # Production techniques
-            'reverb', 'delay', 'fuzz', 'distortion', 'wall of sound',
-            'melancholic', 'ethereal', 'dreamy', 'hazy', 'washed out',
-            'atmospheric', 'ambient', 'ethereal', 'dreamy', 'hazy',
-            'washed out', 'melancholic', 'atmospheric', 'ambient'
+            # Shoegaze subgenres
+            'blackgaze', 'nu gaze', 'slowcore', 'space rock'
         }
         
         # Filter shoegaze scrobbles
