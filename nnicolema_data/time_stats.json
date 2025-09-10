@@ -1,0 +1,58 @@
+{
+  "last_week": {
+    "total_plays": 74,
+    "unique_tracks": 54,
+    "unique_artists": 42,
+    "diversity_score": 0.5675675675675675,
+    "period_start": "2025-09-01T21:25:24.666856",
+    "period_end": "2025-09-08T21:25:24.666856"
+  },
+  "last_month": {
+    "total_plays": 733,
+    "unique_tracks": 398,
+    "unique_artists": 223,
+    "diversity_score": 0.3042291950886767,
+    "period_start": "2025-08-09T21:25:24.666856",
+    "period_end": "2025-09-08T21:25:24.666856"
+  },
+  "last_3_months": {
+    "total_plays": 1000,
+    "unique_tracks": 496,
+    "unique_artists": 259,
+    "diversity_score": 0.259,
+    "period_start": "2025-06-10T21:25:24.666856",
+    "period_end": "2025-09-08T21:25:24.666856"
+  },
+  "last_6_months": {
+    "total_plays": 1000,
+    "unique_tracks": 496,
+    "unique_artists": 259,
+    "diversity_score": 0.259,
+    "period_start": "2025-03-12T21:25:24.666856",
+    "period_end": "2025-09-08T21:25:24.666856"
+  },
+  "last_year": {
+    "total_plays": 1000,
+    "unique_tracks": 496,
+    "unique_artists": 259,
+    "diversity_score": 0.259,
+    "period_start": "2024-09-08T21:25:24.666856",
+    "period_end": "2025-09-08T21:25:24.666856"
+  },
+  "this_year": {
+    "total_plays": 1000,
+    "unique_tracks": 496,
+    "unique_artists": 259,
+    "diversity_score": 0.259,
+    "period_start": "2025-01-01T00:00:00",
+    "period_end": "2025-09-08T21:25:24.666856"
+  },
+  "last_year_full": {
+    "total_plays": 1000,
+    "unique_tracks": 496,
+    "unique_artists": 259,
+    "diversity_score": 0.259,
+    "period_start": "2024-01-01T00:00:00",
+    "period_end": "2025-09-08T21:25:24.666856"
+  }
+}

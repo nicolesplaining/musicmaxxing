@@ -1,0 +1,466 @@
+#!/usr/bin/env python3
+"""
+Advanced Analytics for Last.fm Data
+Unlimited analytics since we have complete JSON database
+"""
+
+import json
+import os
+from datetime import datetime, timedelta
+from typing import List, Dict, Any, Tuple
+from collections import Counter, defaultdict
+import calendar
+
+class AdvancedAnalytics:
+    def __init__(self, data_file: str = "nnicolema_data/complete_scrobbles.json"):
+        self.data_file = data_file
+        self.scrobbles = self.load_scrobbles()
+    
+    def load_scrobbles(self) -> List[Dict[str, Any]]:
+        """Load all scrobbles from JSON file"""
+        if not os.path.exists(self.data_file):
+            return []
+        
+        with open(self.data_file, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    
+    def parse_timestamp(self, timestamp_str: str) -> datetime:
+        """Parse Last.fm timestamp format"""
+        try:
+            return datetime.strptime(timestamp_str, "%d %b %Y, %H:%M")
+        except ValueError:
+            return datetime.min
+    
+    def get_scrobbles_in_range(self, start_date: str, end_date: str) -> List[Dict[str, Any]]:
+        """Get scrobbles within a custom date range"""
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)  # Include end date
+        
+        filtered_scrobbles = []
+        for scrobble in self.scrobbles:
+            if scrobble.get('timestamp'):
+                scrobble_dt = self.parse_timestamp(scrobble['timestamp'])
+                if start_dt <= scrobble_dt < end_dt:
+                    filtered_scrobbles.append(scrobble)
+        
+        return filtered_scrobbles
+    
+    def get_yearly_breakdown(self) -> Dict[str, Any]:
+        """Get listening stats broken down by year"""
+        yearly_data = defaultdict(list)
+        
+        for scrobble in self.scrobbles:
+            if scrobble.get('timestamp'):
+                scrobble_dt = self.parse_timestamp(scrobble['timestamp'])
+                year = scrobble_dt.year
+                yearly_data[year].append(scrobble)
+        
+        yearly_stats = {}
+        for year, scrobbles in yearly_data.items():
+            yearly_stats[str(year)] = self.calculate_period_stats(scrobbles)
+        
+        return yearly_stats
+    
+    def get_monthly_breakdown(self, year: int = None) -> Dict[str, Any]:
+        """Get listening stats broken down by month"""
+        if year is None:
+            year = datetime.now().year
+        
+        monthly_data = defaultdict(list)
+        
+        for scrobble in self.scrobbles:
+            if scrobble.get('timestamp'):
+                scrobble_dt = self.parse_timestamp(scrobble['timestamp'])
+                if scrobble_dt.year == year:
+                    month = scrobble_dt.month
+                    monthly_data[month].append(scrobble)
+        
+        monthly_stats = {}
+        for month, scrobbles in monthly_data.items():
+            month_name = calendar.month_name[month]
+            monthly_stats[month_name] = self.calculate_period_stats(scrobbles)
+        
+        return monthly_stats
+    
+    def get_listening_patterns(self) -> Dict[str, Any]:
+        """Analyze listening patterns by time of day and day of week"""
+        hourly_counts = defaultdict(int)
+        daily_counts = defaultdict(int)
+        hourly_by_day = defaultdict(lambda: defaultdict(int))
+        
+        for scrobble in self.scrobbles:
+            if scrobble.get('timestamp'):
+                scrobble_dt = self.parse_timestamp(scrobble['timestamp'])
+                hour = scrobble_dt.hour
+                day_of_week = scrobble_dt.strftime('%A')
+                
+                hourly_counts[hour] += 1
+                daily_counts[day_of_week] += 1
+                hourly_by_day[day_of_week][hour] += 1
+        
+        # Convert to sorted lists
+        hourly_data = [{'hour': h, 'count': c} for h, c in sorted(hourly_counts.items())]
+        daily_data = [{'day': d, 'count': c} for d, c in sorted(daily_counts.items(), 
+                      key=lambda x: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].index(x[0]))]
+        
+        return {
+            'hourly_distribution': hourly_data,
+            'daily_distribution': daily_data,
+            'hourly_by_day': dict(hourly_by_day)
+        }
+    
+    def get_artist_evolution(self, artist_name: str, period_months: int = 6) -> Dict[str, Any]:
+        """Track how an artist's popularity changes over time"""
+        artist_scrobbles = [s for s in self.scrobbles if s.get('artist', '').lower() == artist_name.lower()]
+        
+        if not artist_scrobbles:
+            return {'error': f'No scrobbles found for artist: {artist_name}'}
+        
+        # Group by time periods
+        period_data = defaultdict(list)
+        
+        for scrobble in artist_scrobbles:
+            if scrobble.get('timestamp'):
+                scrobble_dt = self.parse_timestamp(scrobble['timestamp'])
+                period_key = f"{scrobble_dt.year}-{scrobble_dt.month:02d}"
+                period_data[period_key].append(scrobble)
+        
+        evolution = []
+        for period, scrobbles in sorted(period_data.items()):
+            evolution.append({
+                'period': period,
+                'count': len(scrobbles),
+                'unique_tracks': len(set(f"{s['name']} - {s['artist']}" for s in scrobbles)),
+                'top_track': Counter(s['name'] for s in scrobbles).most_common(1)[0] if scrobbles else None
+            })
+        
+        return {
+            'artist': artist_name,
+            'total_scrobbles': len(artist_scrobbles),
+            'evolution': evolution
+        }
+    
+    def get_comparative_analytics(self, period1_start: str, period1_end: str, 
+                                 period2_start: str, period2_end: str) -> Dict[str, Any]:
+        """Compare two time periods"""
+        period1_scrobbles = self.get_scrobbles_in_range(period1_start, period1_end)
+        period2_scrobbles = self.get_scrobbles_in_range(period2_start, period2_end)
+        
+        period1_stats = self.calculate_period_stats(period1_scrobbles)
+        period2_stats = self.calculate_period_stats(period2_scrobbles)
+        
+        # Calculate changes
+        changes = {}
+        for key in ['total_plays', 'unique_tracks', 'unique_artists']:
+            if key in period1_stats and key in period2_stats:
+                old_val = period1_stats[key]
+                new_val = period2_stats[key]
+                if old_val > 0:
+                    changes[key] = {
+                        'absolute': new_val - old_val,
+                        'percentage': round(((new_val - old_val) / old_val) * 100, 1)
+                    }
+                else:
+                    changes[key] = {'absolute': new_val, 'percentage': 100}
+        
+        return {
+            'period1': {
+                'range': f"{period1_start} to {period1_end}",
+                'stats': period1_stats
+            },
+            'period2': {
+                'range': f"{period2_start} to {period2_end}",
+                'stats': period2_stats
+            },
+            'changes': changes
+        }
+    
+    def get_seasonal_analysis(self) -> Dict[str, Any]:
+        """Analyze listening patterns by season"""
+        seasonal_data = defaultdict(list)
+        
+        for scrobble in self.scrobbles:
+            if scrobble.get('timestamp'):
+                scrobble_dt = self.parse_timestamp(scrobble['timestamp'])
+                month = scrobble_dt.month
+                
+                if month in [12, 1, 2]:
+                    season = 'Winter'
+                elif month in [3, 4, 5]:
+                    season = 'Spring'
+                elif month in [6, 7, 8]:
+                    season = 'Summer'
+                else:
+                    season = 'Fall'
+                
+                seasonal_data[season].append(scrobble)
+        
+        seasonal_stats = {}
+        for season, scrobbles in seasonal_data.items():
+            seasonal_stats[season] = self.calculate_period_stats(scrobbles)
+        
+        return seasonal_stats
+    
+    def get_top_periods(self, metric: str = 'total_plays', period_type: str = 'month') -> List[Dict[str, Any]]:
+        """Get top periods by any metric"""
+        if period_type == 'month':
+            period_data = defaultdict(list)
+            for scrobble in self.scrobbles:
+                if scrobble.get('timestamp'):
+                    scrobble_dt = self.parse_timestamp(scrobble['timestamp'])
+                    period_key = f"{scrobble_dt.year}-{scrobble_dt.month:02d}"
+                    period_data[period_key].append(scrobble)
+        elif period_type == 'year':
+            period_data = defaultdict(list)
+            for scrobble in self.scrobbles:
+                if scrobble.get('timestamp'):
+                    scrobble_dt = self.parse_timestamp(scrobble['timestamp'])
+                    period_key = str(scrobble_dt.year)
+                    period_data[period_key].append(scrobble)
+        else:
+            return []
+        
+        period_stats = []
+        for period, scrobbles in period_data.items():
+            stats = self.calculate_period_stats(scrobbles)
+            stats['period'] = period
+            period_stats.append(stats)
+        
+        return sorted(period_stats, key=lambda x: x.get(metric, 0), reverse=True)[:10]
+    
+    def get_shoegaze_analytics(self) -> Dict[str, Any]:
+        """Get comprehensive shoegaze-specific analytics"""
+        # Define shoegaze artists and keywords
+        shoegaze_artists = {
+            'my bloody valentine', 'slowdive', 'ride', 'lush', 'cocteau twins',
+            'pale saints', 'chapterhouse', 'swervedriver', 'curve', 'moose',
+            'drop nineteens', 'verve', 'spiritualized', 'spacemen 3', 'galaxie 500',
+            'mazzy star', 'slowdive', 'beach house', 'deerhunter', 'wild nothing',
+            'tame impala', 'beach fossils', 'craft spells', 'diiiv', 'alvvays',
+            'pity sex', 'nothing', 'whirr', 'ringo deathstarr', 'pinkshinyultrablast',
+            'tamaryn', 'candy claws', 'pale saints', 'lush', 'chapterhouse',
+            'swervedriver', 'curve', 'moose', 'drop nineteens', 'verve',
+            'spiritualized', 'spacemen 3', 'galaxie 500', 'mazzy star'
+        }
+        
+        shoegaze_keywords = {
+            'shoegaze', 'dream pop', 'ethereal', 'ambient', 'atmospheric',
+            'reverb', 'delay', 'fuzz', 'distortion', 'wall of sound',
+            'melancholic', 'ethereal', 'dreamy', 'hazy', 'washed out'
+        }
+        
+        # Filter shoegaze scrobbles
+        shoegaze_scrobbles = []
+        for scrobble in self.scrobbles:
+            artist = scrobble.get('artist', '').lower()
+            track = scrobble.get('name', '').lower()
+            album = scrobble.get('album', '').lower()
+            
+            # Check if artist is known shoegaze
+            if any(sg_artist in artist for sg_artist in shoegaze_artists):
+                shoegaze_scrobbles.append(scrobble)
+            # Check if track/album contains shoegaze keywords
+            elif any(keyword in track or keyword in album for keyword in shoegaze_keywords):
+                shoegaze_scrobbles.append(scrobble)
+        
+        if not shoegaze_scrobbles:
+            return {
+                'total_shoegaze_plays': 0,
+                'shoegaze_percentage': 0.0,
+                'top_shoegaze_artists': [],
+                'top_shoegaze_tracks': [],
+                'shoegaze_evolution': [],
+                'shoegaze_seasonal': {},
+                'shoegaze_patterns': {}
+            }
+        
+        # Calculate basic stats
+        total_plays = len(self.scrobbles)
+        shoegaze_plays = len(shoegaze_scrobbles)
+        shoegaze_percentage = (shoegaze_plays / total_plays * 100) if total_plays > 0 else 0
+        
+        # Top shoegaze artists
+        artist_counts = Counter(s['artist'] for s in shoegaze_scrobbles)
+        top_shoegaze_artists = [
+            {'name': artist, 'playcount': count, 'percentage': round(count / shoegaze_plays * 100, 1)}
+            for artist, count in artist_counts.most_common(15)
+        ]
+        
+        # Top shoegaze tracks
+        track_counts = Counter(f"{s['artist']} - {s['name']}" for s in shoegaze_scrobbles)
+        top_shoegaze_tracks = [
+            {
+                'name': track.split(" - ", 1)[1],
+                'artist': track.split(" - ", 1)[0],
+                'playcount': count,
+                'percentage': round(count / shoegaze_plays * 100, 1)
+            }
+            for track, count in track_counts.most_common(20)
+        ]
+        
+        # Shoegaze evolution over time
+        shoegaze_evolution = self._get_shoegaze_evolution(shoegaze_scrobbles)
+        
+        # Seasonal shoegaze patterns
+        shoegaze_seasonal = self._get_shoegaze_seasonal(shoegaze_scrobbles)
+        
+        # Shoegaze listening patterns
+        shoegaze_patterns = self._get_shoegaze_patterns(shoegaze_scrobbles)
+        
+        return {
+            'total_shoegaze_plays': shoegaze_plays,
+            'shoegaze_percentage': round(shoegaze_percentage, 1),
+            'total_plays': total_plays,
+            'top_shoegaze_artists': top_shoegaze_artists,
+            'top_shoegaze_tracks': top_shoegaze_tracks,
+            'shoegaze_evolution': shoegaze_evolution,
+            'shoegaze_seasonal': shoegaze_seasonal,
+            'shoegaze_patterns': shoegaze_patterns
+        }
+    
+    def _get_shoegaze_evolution(self, shoegaze_scrobbles: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Track shoegaze listening evolution over time"""
+        monthly_data = defaultdict(list)
+        
+        for scrobble in shoegaze_scrobbles:
+            if scrobble.get('timestamp'):
+                scrobble_dt = self.parse_timestamp(scrobble['timestamp'])
+                month_key = f"{scrobble_dt.year}-{scrobble_dt.month:02d}"
+                monthly_data[month_key].append(scrobble)
+        
+        evolution = []
+        for month, scrobbles in sorted(monthly_data.items()):
+            artist_counts = Counter(s['artist'] for s in scrobbles)
+            top_artist = artist_counts.most_common(1)[0] if artist_counts else ('Unknown', 0)
+            
+            evolution.append({
+                'period': month,
+                'plays': len(scrobbles),
+                'unique_artists': len(artist_counts),
+                'top_artist': top_artist[0],
+                'top_artist_plays': top_artist[1]
+            })
+        
+        return evolution
+    
+    def _get_shoegaze_seasonal(self, shoegaze_scrobbles: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Get seasonal patterns for shoegaze listening"""
+        seasonal_data = defaultdict(list)
+        
+        for scrobble in shoegaze_scrobbles:
+            if scrobble.get('timestamp'):
+                scrobble_dt = self.parse_timestamp(scrobble['timestamp'])
+                month = scrobble_dt.month
+                
+                if month in [12, 1, 2]:
+                    season = 'Winter'
+                elif month in [3, 4, 5]:
+                    season = 'Spring'
+                elif month in [6, 7, 8]:
+                    season = 'Summer'
+                else:
+                    season = 'Fall'
+                
+                seasonal_data[season].append(scrobble)
+        
+        seasonal_stats = {}
+        for season, scrobbles in seasonal_data.items():
+            artist_counts = Counter(s['artist'] for s in scrobbles)
+            seasonal_stats[season] = {
+                'plays': len(scrobbles),
+                'unique_artists': len(artist_counts),
+                'top_artist': artist_counts.most_common(1)[0] if artist_counts else ('Unknown', 0)
+            }
+        
+        return seasonal_stats
+    
+    def _get_shoegaze_patterns(self, shoegaze_scrobbles: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Get listening patterns specific to shoegaze"""
+        hourly_counts = defaultdict(int)
+        daily_counts = defaultdict(int)
+        
+        for scrobble in shoegaze_scrobbles:
+            if scrobble.get('timestamp'):
+                scrobble_dt = self.parse_timestamp(scrobble['timestamp'])
+                hour = scrobble_dt.hour
+                day_of_week = scrobble_dt.strftime('%A')
+                
+                hourly_counts[hour] += 1
+                daily_counts[day_of_week] += 1
+        
+        # Find peak times
+        peak_hour = max(hourly_counts.items(), key=lambda x: x[1]) if hourly_counts else (0, 0)
+        peak_day = max(daily_counts.items(), key=lambda x: x[1]) if daily_counts else ('Monday', 0)
+        
+        return {
+            'hourly_distribution': [{'hour': h, 'count': c} for h, c in sorted(hourly_counts.items())],
+            'daily_distribution': [{'day': d, 'count': c} for d, c in sorted(daily_counts.items(), 
+                              key=lambda x: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].index(x[0]))],
+            'peak_hour': peak_hour[0],
+            'peak_day': peak_day[0],
+            'peak_hour_plays': peak_hour[1],
+            'peak_day_plays': peak_day[1]
+        }
+
+    def calculate_period_stats(self, scrobbles: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """Calculate comprehensive stats for a period"""
+        if not scrobbles:
+            return {
+                'total_plays': 0,
+                'unique_tracks': 0,
+                'unique_artists': 0,
+                'diversity_score': 0.0,
+                'top_tracks': [],
+                'top_artists': [],
+                'top_albums': []
+            }
+        
+        total_plays = len(scrobbles)
+        unique_tracks = len(set(f"{s['artist']} - {s['name']}" for s in scrobbles))
+        unique_artists = len(set(s['artist'] for s in scrobbles))
+        diversity_score = unique_tracks / total_plays if total_plays > 0 else 0.0
+        
+        # Top tracks
+        track_counts = Counter(f"{s['artist']} - {s['name']}" for s in scrobbles)
+        top_tracks = [
+            {
+                'name': track.split(" - ", 1)[1],
+                'artist': track.split(" - ", 1)[0],
+                'playcount': count
+            }
+            for track, count in track_counts.most_common(10)
+        ]
+        
+        # Top artists
+        artist_counts = Counter(s['artist'] for s in scrobbles)
+        top_artists = [
+            {
+                'name': artist,
+                'playcount': count
+            }
+            for artist, count in artist_counts.most_common(10)
+        ]
+        
+        # Top albums
+        album_counts = Counter(f"{s['artist']} - {s['album']}" for s in scrobbles if s['album'])
+        top_albums = [
+            {
+                'name': album.split(" - ", 1)[1],
+                'artist': album.split(" - ", 1)[0],
+                'playcount': count
+            }
+            for album, count in album_counts.most_common(10)
+        ]
+        
+        return {
+            'total_plays': total_plays,
+            'unique_tracks': unique_tracks,
+            'unique_artists': unique_artists,
+            'diversity_score': round(diversity_score, 3),
+            'top_tracks': top_tracks,
+            'top_artists': top_artists,
+            'top_albums': top_albums
+        }
+
+# Global instance
+advanced_analytics = AdvancedAnalytics()

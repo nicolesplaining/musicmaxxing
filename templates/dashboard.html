@@ -1,0 +1,530 @@
+{% extends "base.html" %}
+
+{% block title %}{{ username }} - Dashboard{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <h1>{{ username }}'s Dashboard</h1>
+</div>
+
+<div class="period-selector" id="period-selector">
+    <button class="period-btn active" data-period="last_week">Last Week</button>
+    <button class="period-btn" data-period="last_month">Last Month</button>
+    <button class="period-btn" data-period="last_3_months">Last 3 Months</button>
+    <button class="period-btn" data-period="last_6_months">Last 6 Months</button>
+    <button class="period-btn" data-period="last_year">Last Year</button>
+    <button class="period-btn" data-period="this_year">This Year</button>
+    <button class="period-btn" data-period="custom" id="custom-btn">Custom Range</button>
+</div>
+
+<div id="custom-range-picker" class="card mb-lg hidden">
+    <h3>Custom Date Range</h3>
+    <div class="grid grid-3 gap-md">
+        <div class="form-group">
+            <label for="custom-start-date" class="form-label">Start Date</label>
+            <input type="date" id="custom-start-date" class="form-input" value="2023-01-01">
+        </div>
+        <div class="form-group">
+            <label for="custom-end-date" class="form-label">End Date</label>
+            <input type="date" id="custom-end-date" class="form-input" value="2023-12-31">
+        </div>
+        <div class="form-group">
+            <label class="form-label">&nbsp;</label>
+            <button class="btn btn-primary" onclick="loadCustomRange()" style="width: 100%;">
+                Load Range
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="loading-state" class="loading">
+    <div class="spinner"></div>
+    Loading music data...
+</div>
+
+<div id="dashboard-content" class="hidden">
+    <div class="grid grid-4 mb-lg" id="stats-overview">
+        <div class="stat">
+            <div class="stat-value" id="total-plays">0</div>
+            <div class="stat-label">Total Plays</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="unique-tracks">0</div>
+            <div class="stat-label">Unique Tracks</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="unique-artists">0</div>
+            <div class="stat-label">Artists</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="diversity-score">0%</div>
+            <div class="stat-label">Diversity</div>
+        </div>
+    </div>
+
+    <div class="grid grid-2 mb-lg">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Top Artists</h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="artists-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Top Tracks</h3>
+            </div>
+            <div class="chart-container">
+                <canvas id="tracks-chart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-2">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Top Artists</h3>
+            </div>
+            <div id="top-artists-list" class="list">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Top Tracks</h3>
+            </div>
+            <div id="top-tracks-list" class="list">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-lg">
+        <div class="card-header">
+            <h3 class="card-title">Recent Activity</h3>
+        </div>
+        <div id="recent-activity-list" class="list">
+            <!-- Populated by JavaScript -->
+        </div>
+    </div>
+</div>
+
+<div id="error-message" class="hidden text-center text-muted mt-xl">
+    Unable to load dashboard data at this time.
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const username = '{{ username }}';
+let currentData = null;
+let artistsChart = null;
+let tracksChart = null;
+let currentPeriod = 'last_week';
+
+// Initialize dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    setupPeriodSelector();
+    loadUserData(currentPeriod);
+});
+
+function setupPeriodSelector() {
+    const periodButtons = document.querySelectorAll('.period-btn');
+    periodButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            periodButtons.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentPeriod = this.dataset.period;
+            
+            // Show/hide custom date picker
+            if (currentPeriod === 'custom') {
+                document.getElementById('custom-range-picker').classList.remove('hidden');
+            } else {
+                document.getElementById('custom-range-picker').classList.add('hidden');
+                loadUserData(currentPeriod);
+            }
+        });
+    });
+}
+
+function showLoading() {
+    document.getElementById('loading-state').classList.remove('hidden');
+    document.getElementById('dashboard-content').classList.add('hidden');
+    document.getElementById('error-message').classList.add('hidden');
+}
+
+function hideLoading() {
+    document.getElementById('loading-state').classList.add('hidden');
+}
+
+function showError() {
+    document.getElementById('error-message').classList.remove('hidden');
+    hideLoading();
+}
+
+function showDashboard() {
+    document.getElementById('dashboard-content').classList.remove('hidden');
+    hideLoading();
+}
+
+function loadUserData(timePeriod) {
+    showLoading();
+    
+    fetch(`/api/user/${username}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showError();
+                return;
+            }
+            
+            currentData = data;
+            updateDashboard(timePeriod);
+            showDashboard();
+        })
+        .catch(error => {
+            console.error('Error loading data:', error);
+            showError();
+        });
+}
+
+function updateDashboard(timePeriod) {
+    if (!currentData || !currentData.stats[timePeriod]) {
+        showError();
+        return;
+    }
+    
+    const stats = currentData.stats[timePeriod];
+    
+    // Update stats
+    document.getElementById('total-plays').textContent = stats.total_plays.toLocaleString();
+    document.getElementById('unique-tracks').textContent = stats.unique_tracks.toLocaleString();
+    document.getElementById('unique-artists').textContent = stats.unique_artists.toLocaleString();
+    document.getElementById('diversity-score').textContent = Math.round(stats.diversity_score * 100) + '%';
+    
+    // Update charts
+    updateCharts(stats);
+    
+    // Update lists
+    updateTopLists(stats);
+    
+    // Load recent activity
+    loadRecentActivity();
+}
+
+function updateCharts(stats) {
+    // Destroy existing charts
+    if (artistsChart) artistsChart.destroy();
+    if (tracksChart) tracksChart.destroy();
+    
+    // Top Artists Chart
+    const artistsCtx = document.getElementById('artists-chart').getContext('2d');
+    const topArtists = (stats.top_artists || []).slice(0, 8);
+    
+    artistsChart = new Chart(artistsCtx, {
+        type: 'bar',
+        data: {
+            labels: topArtists.map(artist => artist.name.length > 15 ? artist.name.substring(0, 15) + '...' : artist.name),
+            datasets: [{
+                data: topArtists.map(artist => artist.playcount),
+                backgroundColor: '#000000',
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f0f0f0' },
+                    ticks: { color: '#666666' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#666666' }
+                }
+            }
+        }
+    });
+    
+    // Top Tracks Chart
+    const tracksCtx = document.getElementById('tracks-chart').getContext('2d');
+    const topTracks = (stats.top_tracks || []).slice(0, 6);
+    
+    tracksChart = new Chart(tracksCtx, {
+        type: 'doughnut',
+        data: {
+            labels: topTracks.map(track => track.name.length > 20 ? track.name.substring(0, 20) + '...' : track.name),
+            datasets: [{
+                data: topTracks.map(track => track.playcount),
+                backgroundColor: ['#000000', '#333333', '#666666', '#999999', '#cccccc', '#e5e5e5'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        font: { size: 12 }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateTopLists(stats) {
+    // Top Artists List
+    const artistsList = document.getElementById('top-artists-list');
+    artistsList.innerHTML = '';
+    
+    (stats.top_artists || []).slice(0, 10).forEach((artist, index) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+            <div class="item-content">
+                <div class="item-title">${index + 1}. ${artist.name}</div>
+            </div>
+            <div class="item-meta">${artist.playcount.toLocaleString()}</div>
+        `;
+        artistsList.appendChild(item);
+    });
+    
+    // Top Tracks List
+    const tracksList = document.getElementById('top-tracks-list');
+    tracksList.innerHTML = '';
+    
+    (stats.top_tracks || []).slice(0, 10).forEach((track, index) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+            <div class="item-content">
+                <div class="item-title">${index + 1}. ${track.name}</div>
+                <div class="item-subtitle">${track.artist}</div>
+            </div>
+            <div class="item-meta">${track.playcount.toLocaleString()}</div>
+        `;
+        tracksList.appendChild(item);
+    });
+}
+
+function loadRecentActivity() {
+    fetch(`/api/user/${username}/recent?days=7&limit=15`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) return;
+            
+            const recentList = document.getElementById('recent-activity-list');
+            recentList.innerHTML = '';
+            
+            data.tracks.forEach(track => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                const date = track.timestamp ? new Date(track.timestamp).toLocaleDateString() : '';
+                item.innerHTML = `
+                    <div class="item-content">
+                        <div class="item-title">${track.name}</div>
+                        <div class="item-subtitle">${track.artist}</div>
+                    </div>
+                    <div class="item-meta">${date}</div>
+                `;
+                recentList.appendChild(item);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading recent activity:', error);
+        });
+}
+
+function loadCustomRange() {
+    const startDate = document.getElementById('custom-start-date').value;
+    const endDate = document.getElementById('custom-end-date').value;
+    
+    if (!startDate || !endDate) {
+        alert('Please select both start and end dates');
+        return;
+    }
+    
+    showLoading();
+    
+    fetch(`/api/user/${username}/custom-range?start_date=${startDate}&end_date=${endDate}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showError();
+                return;
+            }
+            
+            // Update the dashboard with custom range data
+            updateDashboardWithCustomData(data);
+            showDashboard();
+        })
+        .catch(error => {
+            console.error('Error loading custom range:', error);
+            showError();
+        });
+}
+
+function updateDashboardWithCustomData(data) {
+    // Update stats
+    document.getElementById('total-plays').textContent = data.total_plays.toLocaleString();
+    document.getElementById('unique-tracks').textContent = data.unique_tracks.toLocaleString();
+    document.getElementById('unique-artists').textContent = data.unique_artists.toLocaleString();
+    document.getElementById('diversity-score').textContent = Math.round(data.diversity_score * 100) + '%';
+    
+    // Update charts
+    updateChartsWithCustomData(data);
+    
+    // Update lists
+    updateTopListsWithCustomData(data);
+    
+    // Load recent activity for the custom range
+    loadRecentActivityForRange(data.start_date, data.end_date);
+}
+
+function updateChartsWithCustomData(data) {
+    // Destroy existing charts
+    if (artistsChart) artistsChart.destroy();
+    if (tracksChart) tracksChart.destroy();
+    
+    // Top Artists Chart
+    const artistsCtx = document.getElementById('artists-chart').getContext('2d');
+    const topArtists = (data.top_artists || []).slice(0, 8);
+    
+    artistsChart = new Chart(artistsCtx, {
+        type: 'bar',
+        data: {
+            labels: topArtists.map(artist => artist.name.length > 15 ? artist.name.substring(0, 15) + '...' : artist.name),
+            datasets: [{
+                data: topArtists.map(artist => artist.playcount),
+                backgroundColor: '#000000',
+                borderRadius: 4,
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f0f0f0' },
+                    ticks: { color: '#666666' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#666666' }
+                }
+            }
+        }
+    });
+    
+    // Top Tracks Chart
+    const tracksCtx = document.getElementById('tracks-chart').getContext('2d');
+    const topTracks = (data.top_tracks || []).slice(0, 6);
+    
+    tracksChart = new Chart(tracksCtx, {
+        type: 'doughnut',
+        data: {
+            labels: topTracks.map(track => track.name.length > 20 ? track.name.substring(0, 20) + '...' : track.name),
+            datasets: [{
+                data: topTracks.map(track => track.playcount),
+                backgroundColor: ['#000000', '#333333', '#666666', '#999999', '#cccccc', '#e5e5e5'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        usePointStyle: true,
+                        font: { size: 12 }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function updateTopListsWithCustomData(data) {
+    // Top Artists List
+    const artistsList = document.getElementById('top-artists-list');
+    artistsList.innerHTML = '';
+    
+    (data.top_artists || []).slice(0, 10).forEach((artist, index) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+            <div class="item-content">
+                <div class="item-title">${index + 1}. ${artist.name}</div>
+            </div>
+            <div class="item-meta">${artist.playcount.toLocaleString()}</div>
+        `;
+        artistsList.appendChild(item);
+    });
+    
+    // Top Tracks List
+    const tracksList = document.getElementById('top-tracks-list');
+    tracksList.innerHTML = '';
+    
+    (data.top_tracks || []).slice(0, 10).forEach((track, index) => {
+        const item = document.createElement('div');
+        item.className = 'list-item';
+        item.innerHTML = `
+            <div class="item-content">
+                <div class="item-title">${index + 1}. ${track.name}</div>
+                <div class="item-subtitle">${track.artist}</div>
+            </div>
+            <div class="item-meta">${track.playcount.toLocaleString()}</div>
+        `;
+        tracksList.appendChild(item);
+    });
+}
+
+function loadRecentActivityForRange(startDate, endDate) {
+    fetch(`/api/user/${username}/recent?start_date=${startDate}&end_date=${endDate}&limit=15`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) return;
+            
+            const recentList = document.getElementById('recent-activity-list');
+            recentList.innerHTML = '';
+            
+            data.tracks.forEach(track => {
+                const item = document.createElement('div');
+                item.className = 'list-item';
+                const date = track.timestamp ? new Date(track.timestamp).toLocaleDateString() : '';
+                item.innerHTML = `
+                    <div class="item-content">
+                        <div class="item-title">${track.name}</div>
+                        <div class="item-subtitle">${track.artist}</div>
+                    </div>
+                    <div class="item-meta">${date}</div>
+                `;
+                recentList.appendChild(item);
+            });
+        })
+        .catch(error => {
+            console.error('Error loading recent activity for range:', error);
+        });
+}
+</script>
+{% endblock %}

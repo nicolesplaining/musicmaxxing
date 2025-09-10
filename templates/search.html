@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block title %}Search - {{ username }}{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <h1>Search {{ username }}'s Music</h1>
+</div>
+
+<div class="card mb-lg">
+    <form id="search-form">
+        <div class="grid grid-3 gap-md">
+            <div class="form-group">
+                <label for="search-query" class="form-label">Search Query</label>
+                <input type="text" class="form-input" id="search-query" 
+                       placeholder="Enter artist, track, or album..." required>
+            </div>
+            <div class="form-group">
+                <label for="time-range" class="form-label">Time Range</label>
+                <select class="form-input" id="time-range">
+                    <option value="7">Last Week</option>
+                    <option value="30" selected>Last Month</option>
+                    <option value="90">Last 3 Months</option>
+                    <option value="180">Last 6 Months</option>
+                    <option value="365">Last Year</option>
+                    <option value="all">All Time</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">&nbsp;</label>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">
+                    Search
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<div id="loading-state" class="loading hidden">
+    <div class="spinner"></div>
+    Searching your music library...
+</div>
+
+<div id="search-results" class="card hidden">
+    <div class="card-header">
+        <h3 class="card-title">
+            Search Results 
+            <span id="results-count" class="pill">0</span>
+        </h3>
+    </div>
+    <div id="results-list" class="list">
+        <!-- Results populated by JavaScript -->
+    </div>
+</div>
+
+<div id="no-results" class="text-center mt-xl hidden">
+    <h3 class="text-muted">No results found</h3>
+    <p class="text-muted">Try a different search term or time range.</p>
+</div>
+
+<div id="error-message" class="text-center mt-xl hidden">
+    <h3 class="text-muted">Search failed</h3>
+    <p class="text-muted">Please try again.</p>
+</div>
+
+<!-- <div class="card mt-lg">
+    <h3>Search Tips</h3>
+    <div class="grid grid-2 mt-md">
+        <ul class="list" style="list-style: disc; padding-left: 1rem;">
+            <li>Search by artist name</li>
+            <li>Search by track title</li>
+            <li>Partial matches work</li>
+        </ul>
+        <ul class="list" style="list-style: disc; padding-left: 1rem;">
+            <li>Case insensitive</li>
+            <li>Try different time ranges</li>
+            <li>Use album names too</li>
+        </ul>
+    </div>
+</div> -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+const username = '{{ username }}';
+
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('search-form');
+    const searchQuery = document.getElementById('search-query');
+    
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        performSearch();
+    });
+    
+    searchQuery.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+});
+
+function showLoading() {
+    document.getElementById('loading-state').classList.remove('hidden');
+    document.getElementById('search-results').classList.add('hidden');
+    document.getElementById('no-results').classList.add('hidden');
+    document.getElementById('error-message').classList.add('hidden');
+}
+
+function hideLoading() {
+    document.getElementById('loading-state').classList.add('hidden');
+}
+
+function showError() {
+    document.getElementById('error-message').classList.remove('hidden');
+    hideLoading();
+}
+
+function performSearch() {
+    const query = document.getElementById('search-query').value.trim();
+    const timeRange = document.getElementById('time-range').value;
+    
+    if (!query) {
+        alert('Please enter a search query');
+        return;
+    }
+    
+    showLoading();
+    
+    const url = timeRange === 'all' 
+        ? `/api/user/${username}/search?q=${encodeURIComponent(query)}&all_time=true`
+        : `/api/user/${username}/search?q=${encodeURIComponent(query)}&days=${timeRange}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showError();
+                return;
+            }
+            
+            displayResults(data);
+            hideLoading();
+        })
+        .catch(error => {
+            console.error('Search error:', error);
+            showError();
+        });
+}
+
+function displayResults(data) {
+    const resultsList = document.getElementById('results-list');
+    const resultsCount = document.getElementById('results-count');
+    const searchResults = document.getElementById('search-results');
+    const noResults = document.getElementById('no-results');
+    
+    resultsList.innerHTML = '';
+    
+    if (data.results && data.results.length > 0) {
+        resultsCount.textContent = data.results.length;
+        searchResults.classList.remove('hidden');
+        noResults.classList.add('hidden');
+        
+        data.results.forEach((track, index) => {
+            const item = document.createElement('div');
+            item.className = 'list-item';
+            
+            const playCount = track.playcount || 0;
+            const timestamp = track.timestamp ? new Date(track.timestamp).toLocaleDateString() : '';
+            
+            item.innerHTML = `
+                <div class="item-content">
+                    <div class="item-title">${index + 1}. ${track.name}</div>
+                    <div class="item-subtitle">
+                        ${track.artist}
+                        ${track.album ? ` • ${track.album}` : ''}
+                    </div>
+                </div>
+                <div class="item-meta">
+                    ${playCount.toLocaleString()} plays
+                    ${timestamp ? ` • ${timestamp}` : ''}
+                </div>
+            `;
+            
+            resultsList.appendChild(item);
+        });
+    } else {
+        searchResults.classList.add('hidden');
+        noResults.classList.remove('hidden');
+    }
+}
+</script>
+{% endblock %}

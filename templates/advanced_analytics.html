@@ -1,0 +1,943 @@
+{% extends "base.html" %}
+
+{% block title %}Advanced Analytics{% endblock %}
+
+{% block content %}
+<div class="mb-lg">
+    <div class="flex justify-between items-center">
+        <div>
+            <h1>Advanced Analytics</h1>
+        </div>
+        <a href="/dashboard/nnicolema" class="btn btn-secondary">
+            Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<div class="tabs-container mb-lg">
+    <div class="tabs" id="analytics-tabs">
+        <button class="tab active" data-tab="custom-range">Custom Range</button>
+        <button class="tab" data-tab="patterns">Listening Patterns</button>
+        <button class="tab" data-tab="yearly">Yearly Breakdown</button>
+        <button class="tab" data-tab="seasonal">Seasonal Analysis</button>
+        <button class="tab" data-tab="evolution">Artist Evolution</button>
+        <button class="tab" data-tab="compare">Compare Periods</button>
+        <button class="tab" data-tab="shoegaze">Shoegaze Analytics</button>
+    </div>
+</div>
+
+<!-- Custom Range Tab -->
+<div id="custom-range" class="tab-content active">
+    <div class="card">
+        <h3>Custom Date Range Analysis</h3>
+        
+        <div class="grid grid-3 gap-md mb-md">
+            <div class="form-group">
+                <label for="start-date" class="form-label">Start Date</label>
+                <input type="date" id="start-date" class="form-input" value="2023-01-01">
+            </div>
+            <div class="form-group">
+                <label for="end-date" class="form-label">End Date</label>
+                <input type="date" id="end-date" class="form-input" value="2023-12-31">
+            </div>
+            <div class="form-group">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary" onclick="analyzeCustomRange()" style="width: 100%;">
+                    Analyze Range
+                </button>
+            </div>
+        </div>
+        
+        <div id="custom-range-results">
+            <div class="text-center text-muted">Select a date range and click Analyze</div>
+        </div>
+    </div>
+</div>
+
+<!-- Listening Patterns Tab -->
+<div id="patterns" class="tab-content">
+    <div class="card">
+        <h3>Listening Patterns</h3>
+        <div id="patterns-results">
+            <div class="loading">
+                <div class="spinner"></div>
+                Loading listening patterns...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Yearly Breakdown Tab -->
+<div id="yearly" class="tab-content">
+    <div class="card">
+        <h3>Yearly Listening Breakdown</h3>
+        <div id="yearly-results">
+            <div class="loading">
+                <div class="spinner"></div>
+                Loading yearly breakdown...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Seasonal Analysis Tab -->
+<div id="seasonal" class="tab-content">
+    <div class="card">
+        <h3>Seasonal Listening Analysis</h3>
+        <div id="seasonal-results">
+            <div class="loading">
+                <div class="spinner"></div>
+                Loading seasonal analysis...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Artist Evolution Tab -->
+<div id="evolution" class="tab-content">
+    <div class="card">
+        <h3>Artist Evolution Over Time</h3>
+        
+        <div class="flex gap-sm mb-md">
+            <input type="text" id="artist-name" class="form-input" placeholder="Enter artist name (e.g., Taylor Swift)" style="flex: 1;">
+            <button class="btn btn-primary" onclick="analyzeArtistEvolution()">
+                Track Evolution
+            </button>
+        </div>
+        
+        <div id="evolution-results">
+            <div class="text-center text-muted">Enter an artist name to track their evolution over time</div>
+        </div>
+    </div>
+</div>
+
+<!-- Compare Periods Tab -->
+<div id="compare" class="tab-content">
+    <div class="card">
+        <h3>Compare Two Time Periods</h3>
+        
+        <div class="grid grid-2 gap-md mb-md">
+            <div>
+                <h4 class="mb-sm">Period 1</h4>
+                <div class="flex gap-sm">
+                    <input type="date" id="period1-start" class="form-input" value="2023-01-01">
+                    <input type="date" id="period1-end" class="form-input" value="2023-06-30">
+                </div>
+            </div>
+            <div>
+                <h4 class="mb-sm">Period 2</h4>
+                <div class="flex gap-sm">
+                    <input type="date" id="period2-start" class="form-input" value="2023-07-01">
+                    <input type="date" id="period2-end" class="form-input" value="2023-12-31">
+                </div>
+            </div>
+        </div>
+        
+        <button class="btn btn-primary" onclick="comparePeriods()">
+            Compare Periods
+        </button>
+        
+        <div id="compare-results">
+            <div class="text-center text-muted mt-lg">Select two periods and click Compare</div>
+        </div>
+    </div>
+</div>
+
+<!-- Shoegaze Analytics Tab -->
+<div id="shoegaze" class="tab-content">
+    <div class="card">
+        <h3>Shoegaze Analytics</h3>
+        <div id="shoegaze-results">
+            <div class="loading">
+                <div class="spinner"></div>
+                Loading shoegaze analytics...
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+.tabs-container {
+    overflow-x: auto;
+}
+
+.tabs {
+    display: flex;
+    gap: var(--space-xs);
+    min-width: max-content;
+    padding: var(--space-xs);
+    background: var(--bg-soft);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+}
+
+.tab {
+    padding: var(--space-xs) var(--space-md);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.tab.active {
+    background: var(--primary);
+    color: white;
+}
+
+.tab:hover:not(.active) {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--text);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.analytics-stat {
+    text-align: center;
+    padding: var(--space-lg);
+    background: var(--bg-soft);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+}
+
+.analytics-stat-value {
+    font-size: var(--font-size-3xl);
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: var(--space-xs);
+}
+
+.analytics-stat-label {
+    font-size: var(--font-size-sm);
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-md);
+    margin: var(--space-lg) 0;
+}
+
+.comparison-period {
+    padding: var(--space-lg);
+    background: var(--bg-soft);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+}
+
+.comparison-title {
+    font-weight: 600;
+    margin-bottom: var(--space-md);
+    color: var(--text);
+    text-align: center;
+}
+
+.change-indicator {
+    display: inline-block;
+    padding: 2px var(--space-xs);
+    border-radius: 12px;
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    margin-left: var(--space-xs);
+}
+
+.change-positive {
+    background: #d4edda;
+    color: #155724;
+}
+
+.change-negative {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+@media (max-width: 768px) {
+    .tabs {
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    
+    .tabs::-webkit-scrollbar {
+        display: none;
+    }
+    
+    .comparison-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+<script>
+// Tab Management
+document.addEventListener('DOMContentLoaded', function() {
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.dataset.tab;
+            switchTab(tabName);
+        });
+    });
+    
+    // Load initial tab data
+    loadTabData('custom-range');
+});
+
+function switchTab(tabName) {
+    // Remove active from all tabs and contents
+    document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    // Add active to selected tab and content
+    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    document.getElementById(tabName).classList.add('active');
+    
+    // Load data for the tab
+    loadTabData(tabName);
+}
+
+function loadTabData(tabName) {
+    switch(tabName) {
+        case 'patterns':
+            loadListeningPatterns();
+            break;
+        case 'yearly':
+            loadYearlyBreakdown();
+            break;
+        case 'seasonal':
+            loadSeasonalAnalysis();
+            break;
+        case 'shoegaze':
+            loadShoegazeAnalytics();
+            break;
+    }
+}
+
+// Custom Range Analysis
+async function analyzeCustomRange() {
+    const startDate = document.getElementById('start-date').value;
+    const endDate = document.getElementById('end-date').value;
+    
+    if (!startDate || !endDate) {
+        showError('custom-range-results', 'Please select both start and end dates');
+        return;
+    }
+    
+    showLoading('custom-range-results');
+    
+    try {
+        const response = await fetch(`/api/analytics/custom-range?start_date=${startDate}&end_date=${endDate}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            showError('custom-range-results', data.error);
+            return;
+        }
+        
+        displayCustomRangeResults(data);
+    } catch (error) {
+        showError('custom-range-results', 'Error loading custom range data');
+    }
+}
+
+function displayCustomRangeResults(data) {
+    const container = document.getElementById('custom-range-results');
+    container.innerHTML = `
+        <div class="grid grid-4 mb-lg">
+            <div class="analytics-stat">
+                <div class="analytics-stat-value">${data.stats.total_plays.toLocaleString()}</div>
+                <div class="analytics-stat-label">Total Plays</div>
+            </div>
+            <div class="analytics-stat">
+                <div class="analytics-stat-value">${data.stats.unique_artists.toLocaleString()}</div>
+                <div class="analytics-stat-label">Unique Artists</div>
+            </div>
+            <div class="analytics-stat">
+                <div class="analytics-stat-value">${data.stats.unique_tracks.toLocaleString()}</div>
+                <div class="analytics-stat-label">Unique Tracks</div>
+            </div>
+            <div class="analytics-stat">
+                <div class="analytics-stat-value">${data.stats.diversity_score}</div>
+                <div class="analytics-stat-label">Diversity Score</div>
+            </div>
+        </div>
+        
+        <div class="grid grid-2">
+            <div class="card">
+                <h4>Top Artists</h4>
+                <div class="list">
+                    ${data.stats.top_artists.slice(0, 10).map(artist => `
+                        <div class="list-item">
+                            <div class="item-content">
+                                <div class="item-title">${artist.name}</div>
+                            </div>
+                            <div class="item-meta">${artist.playcount}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="card">
+                <h4>Top Tracks</h4>
+                <div class="list">
+                    ${data.stats.top_tracks.slice(0, 10).map(track => `
+                        <div class="list-item">
+                            <div class="item-content">
+                                <div class="item-title">${track.name}</div>
+                                <div class="item-subtitle">${track.artist}</div>
+                            </div>
+                            <div class="item-meta">${track.playcount}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Listening Patterns
+async function loadListeningPatterns() {
+    showLoading('patterns-results');
+    
+    try {
+        const response = await fetch('/api/analytics/listening-patterns');
+        const data = await response.json();
+        
+        if (data.error) {
+            showError('patterns-results', data.error);
+            return;
+        }
+        
+        displayListeningPatterns(data);
+    } catch (error) {
+        showError('patterns-results', 'Error loading listening patterns');
+    }
+}
+
+function displayListeningPatterns(data) {
+    const peakHour = data.hourly_distribution.reduce((max, item) => item.count > max.count ? item : max);
+    const peakDay = data.daily_distribution.reduce((max, item) => item.count > max.count ? item : max);
+    
+    const container = document.getElementById('patterns-results');
+    container.innerHTML = `
+        <div class="grid grid-4 mb-lg">
+            <div class="analytics-stat">
+                <div class="analytics-stat-value">${peakHour.hour}:00</div>
+                <div class="analytics-stat-label">Peak Hour</div>
+            </div>
+            <div class="analytics-stat">
+                <div class="analytics-stat-value">${peakDay.day}</div>
+                <div class="analytics-stat-label">Peak Day</div>
+            </div>
+            <div class="analytics-stat">
+                <div class="analytics-stat-value">${peakHour.count.toLocaleString()}</div>
+                <div class="analytics-stat-label">Plays at Peak Hour</div>
+            </div>
+            <div class="analytics-stat">
+                <div class="analytics-stat-value">${peakDay.count.toLocaleString()}</div>
+                <div class="analytics-stat-label">Plays on Peak Day</div>
+            </div>
+        </div>
+        
+        <div class="grid grid-2">
+            <div class="card">
+                <h4>Hourly Distribution</h4>
+                <div class="chart-container">
+                    <canvas id="hourly-chart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <h4>Daily Distribution</h4>
+                <div class="chart-container">
+                    <canvas id="daily-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Create charts
+    createHourlyChart(data.hourly_distribution);
+    createDailyChart(data.daily_distribution);
+}
+
+function createHourlyChart(data) {
+    const ctx = document.getElementById('hourly-chart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.map(item => item.hour + ':00'),
+            datasets: [{
+                data: data.map(item => item.count),
+                borderColor: '#000000',
+                backgroundColor: 'rgba(0, 0, 0, 0.1)',
+                tension: 0.4,
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true,
+                    grid: { color: '#f0f0f0' },
+                    ticks: { color: '#666666' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#666666' }
+                }
+            }
+        }
+    });
+}
+
+function createDailyChart(data) {
+    const ctx = document.getElementById('daily-chart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: data.map(item => item.day),
+            datasets: [{
+                data: data.map(item => item.count),
+                backgroundColor: '#000000',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true,
+                    grid: { color: '#f0f0f0' },
+                    ticks: { color: '#666666' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#666666' }
+                }
+            }
+        }
+    });
+}
+
+// Yearly Breakdown
+async function loadYearlyBreakdown() {
+    showLoading('yearly-results');
+    
+    try {
+        const response = await fetch('/api/analytics/yearly-breakdown');
+        const data = await response.json();
+        
+        if (data.error) {
+            showError('yearly-results', data.error);
+            return;
+        }
+        
+        displayYearlyBreakdown(data);
+    } catch (error) {
+        showError('yearly-results', 'Error loading yearly breakdown');
+    }
+}
+
+function displayYearlyBreakdown(data) {
+    const container = document.getElementById('yearly-results');
+    const years = Object.keys(data).sort();
+    
+    container.innerHTML = `
+        <div class="card mb-lg">
+            <h4>Yearly Comparison</h4>
+            <div class="chart-container">
+                <canvas id="yearly-chart"></canvas>
+            </div>
+        </div>
+        
+        <div class="grid grid-4">
+            ${years.map(year => `
+                <div class="analytics-stat">
+                    <div class="analytics-stat-value">${data[year].total_plays.toLocaleString()}</div>
+                    <div class="analytics-stat-label">${year}</div>
+                    <div style="font-size: var(--font-size-xs); color: var(--text-light); margin-top: var(--space-xs);">
+                        ${data[year].unique_artists} artists
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    // Create yearly chart
+    createYearlyChart(data, years);
+}
+
+function createYearlyChart(data, years) {
+    const ctx = document.getElementById('yearly-chart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: years,
+            datasets: [{
+                data: years.map(year => data[year].total_plays),
+                backgroundColor: '#000000',
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { 
+                    beginAtZero: true,
+                    grid: { color: '#f0f0f0' },
+                    ticks: { color: '#666666' }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#666666' }
+                }
+            }
+        }
+    });
+}
+
+// Seasonal Analysis
+async function loadSeasonalAnalysis() {
+    showLoading('seasonal-results');
+    
+    try {
+        const response = await fetch('/api/analytics/seasonal');
+        const data = await response.json();
+        
+        if (data.error) {
+            showError('seasonal-results', data.error);
+            return;
+        }
+        
+        displaySeasonalAnalysis(data);
+    } catch (error) {
+        showError('seasonal-results', 'Error loading seasonal analysis');
+    }
+}
+
+function displaySeasonalAnalysis(data) {
+    const container = document.getElementById('seasonal-results');
+    const seasons = ['Spring', 'Summer', 'Fall', 'Winter'];
+    
+    container.innerHTML = `
+        <div class="grid grid-4">
+            ${seasons.map(season => `
+                <div class="analytics-stat">
+                    <div class="analytics-stat-value">${data[season] ? data[season].total_plays.toLocaleString() : '0'}</div>
+                    <div class="analytics-stat-label">${season}</div>
+                    <div style="font-size: var(--font-size-xs); color: var(--text-light); margin-top: var(--space-xs);">
+                        ${data[season] ? data[season].unique_artists : '0'} artists
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+}
+
+// Artist Evolution
+async function analyzeArtistEvolution() {
+    const artistName = document.getElementById('artist-name').value.trim();
+    
+    if (!artistName) {
+        showError('evolution-results', 'Please enter an artist name');
+        return;
+    }
+    
+    showLoading('evolution-results');
+    
+    try {
+        const response = await fetch(`/api/analytics/artist-evolution?artist=${encodeURIComponent(artistName)}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            showError('evolution-results', data.error);
+            return;
+        }
+        
+        displayArtistEvolution(data);
+    } catch (error) {
+        showError('evolution-results', 'Error loading artist evolution');
+    }
+}
+
+function displayArtistEvolution(data) {
+    const container = document.getElementById('evolution-results');
+    
+    container.innerHTML = `
+        <div class="grid grid-2 mb-lg">
+            <div class="analytics-stat">
+                <div class="analytics-stat-value">${data.total_scrobbles.toLocaleString()}</div>
+                <div class="analytics-stat-label">Total Scrobbles</div>
+            </div>
+            <div class="analytics-stat">
+                <div class="analytics-stat-value">${data.evolution.length}</div>
+                <div class="analytics-stat-label">Active Months</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h4>Evolution Over Time</h4>
+            <div class="list" style="max-height: 400px; overflow-y: auto;">
+                ${data.evolution.map(period => `
+                    <div class="list-item">
+                        <div class="item-content">
+                            <div class="item-title">${period.period}</div>
+                            <div class="item-subtitle">
+                                ${period.unique_tracks} unique tracks
+                                ${period.top_track ? ` • Top: ${period.top_track[0]} (${period.top_track[1]} plays)` : ''}
+                            </div>
+                        </div>
+                        <div class="item-meta">${period.count}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+// Compare Periods
+async function comparePeriods() {
+    const period1Start = document.getElementById('period1-start').value;
+    const period1End = document.getElementById('period1-end').value;
+    const period2Start = document.getElementById('period2-start').value;
+    const period2End = document.getElementById('period2-end').value;
+    
+    if (!period1Start || !period1End || !period2Start || !period2End) {
+        showError('compare-results', 'Please select all date ranges');
+        return;
+    }
+    
+    showLoading('compare-results');
+    
+    try {
+        const response = await fetch(`/api/analytics/compare-periods?period1_start=${period1Start}&period1_end=${period1End}&period2_start=${period2Start}&period2_end=${period2End}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            showError('compare-results', data.error);
+            return;
+        }
+        
+        displayComparison(data);
+    } catch (error) {
+        showError('compare-results', 'Error loading comparison data');
+    }
+}
+
+function displayComparison(data) {
+    const container = document.getElementById('compare-results');
+    
+    container.innerHTML = `
+        <div class="comparison-grid mb-lg">
+            <div class="comparison-period">
+                <div class="comparison-title">${data.period1.range}</div>
+                <div class="grid grid-2 gap-sm">
+                    <div class="analytics-stat">
+                        <div class="analytics-stat-value">${data.period1.stats.total_plays.toLocaleString()}</div>
+                        <div class="analytics-stat-label">Total Plays</div>
+                    </div>
+                    <div class="analytics-stat">
+                        <div class="analytics-stat-value">${data.period1.stats.unique_artists.toLocaleString()}</div>
+                        <div class="analytics-stat-label">Unique Artists</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="comparison-period">
+                <div class="comparison-title">${data.period2.range}</div>
+                <div class="grid grid-2 gap-sm">
+                    <div class="analytics-stat">
+                        <div class="analytics-stat-value">${data.period2.stats.total_plays.toLocaleString()}</div>
+                        <div class="analytics-stat-label">Total Plays</div>
+                    </div>
+                    <div class="analytics-stat">
+                        <div class="analytics-stat-value">${data.period2.stats.unique_artists.toLocaleString()}</div>
+                        <div class="analytics-stat-label">Unique Artists</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h4>Changes</h4>
+            <div class="grid grid-4">
+                ${Object.entries(data.changes).map(([key, change]) => `
+                    <div class="analytics-stat">
+                        <div class="analytics-stat-value">
+                            ${change.absolute > 0 ? '+' : ''}${change.absolute.toLocaleString()}
+                            <span class="change-indicator ${change.percentage > 0 ? 'change-positive' : 'change-negative'}">
+                                ${change.percentage > 0 ? '+' : ''}${change.percentage}%
+                            </span>
+                        </div>
+                        <div class="analytics-stat-label">${key.replace('_', ' ').toUpperCase()}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+}
+
+// Shoegaze Analytics
+async function loadShoegazeAnalytics() {
+    showLoading('shoegaze-results');
+    
+    try {
+        const response = await fetch('/api/analytics/shoegaze');
+        const data = await response.json();
+        
+        if (data.error) {
+            showError('shoegaze-results', data.error);
+            return;
+        }
+        
+        displayShoegazeAnalytics(data);
+    } catch (error) {
+        showError('shoegaze-results', 'Error loading shoegaze analytics');
+    }
+}
+
+function displayShoegazeAnalytics(data) {
+    const container = document.getElementById('shoegaze-results');
+    
+    if (data.total_shoegaze_plays === 0) {
+        container.innerHTML = `
+            <div class="text-center mt-xl">
+                <h3 class="text-muted">No Shoegaze Found</h3>
+                <p class="text-muted">No shoegaze music detected in your listening history.</p>
+                <p class="text-muted">Try listening to artists like My Bloody Valentine, Slowdive, Ride, or Lush!</p>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = `
+        <div class="grid grid-4 mb-lg">
+            <div class="analytics-stat">
+                <div class="analytics-stat-value">${data.total_shoegaze_plays.toLocaleString()}</div>
+                <div class="analytics-stat-label">Shoegaze Plays</div>
+            </div>
+            <div class="analytics-stat">
+                <div class="analytics-stat-value">${data.shoegaze_percentage}%</div>
+                <div class="analytics-stat-label">of Total Plays</div>
+            </div>
+            <div class="analytics-stat">
+                <div class="analytics-stat-value">${data.top_shoegaze_artists.length}</div>
+                <div class="analytics-stat-label">Shoegaze Artists</div>
+            </div>
+            <div class="analytics-stat">
+                <div class="analytics-stat-value">${data.shoegaze_evolution.length}</div>
+                <div class="analytics-stat-label">Active Months</div>
+            </div>
+        </div>
+        
+        <div class="grid grid-2 mb-lg">
+            <div class="card">
+                <h4>Top Shoegaze Artists</h4>
+                <div class="list">
+                    ${data.top_shoegaze_artists.slice(0, 10).map(artist => `
+                        <div class="list-item">
+                            <div class="item-content">
+                                <div class="item-title">${artist.name}</div>
+                                <div class="item-subtitle">${artist.percentage}% of shoegaze plays</div>
+                            </div>
+                            <div class="item-meta">${artist.playcount}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="card">
+                <h4>Top Shoegaze Tracks</h4>
+                <div class="list">
+                    ${data.top_shoegaze_tracks.slice(0, 10).map(track => `
+                        <div class="list-item">
+                            <div class="item-content">
+                                <div class="item-title">${track.name}</div>
+                                <div class="item-subtitle">${track.artist} • ${track.percentage}%</div>
+                            </div>
+                            <div class="item-meta">${track.playcount}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+        
+        <div class="grid grid-2">
+            <div class="card">
+                <h4>Shoegaze Evolution (Last 12 Months)</h4>
+                <div class="list">
+                    ${data.shoegaze_evolution.slice(-12).map(period => `
+                        <div class="list-item">
+                            <div class="item-content">
+                                <div class="item-title">${period.period}</div>
+                                <div class="item-subtitle">
+                                    ${period.unique_artists} artists • Top: ${period.top_artist}
+                                </div>
+                            </div>
+                            <div class="item-meta">${period.plays}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="card">
+                <h4>Seasonal Shoegaze</h4>
+                <div class="grid grid-2 gap-sm">
+                    ${Object.entries(data.shoegaze_seasonal).map(([season, stats]) => `
+                        <div class="analytics-stat">
+                            <div class="analytics-stat-value">${stats.plays}</div>
+                            <div class="analytics-stat-label">${season}</div>
+                            <div style="font-size: var(--font-size-xs); color: var(--text-light); margin-top: var(--space-xs);">
+                                Top: ${stats.top_artist[0]} (${stats.top_artist[1]})
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Utility Functions
+function showLoading(containerId) {
+    document.getElementById(containerId).innerHTML = `
+        <div class="loading">
+            <div class="spinner"></div>
+            Loading...
+        </div>
+    `;
+}
+
+function showError(containerId, message) {
+    document.getElementById(containerId).innerHTML = `
+        <div class="text-center text-muted mt-lg">
+            ${message}
+        </div>
+    `;
+}
+</script>
+{% endblock %}
