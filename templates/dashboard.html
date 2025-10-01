@@ -192,27 +192,33 @@ function loadUserData(timePeriod) {
 }
 
 function updateDashboard(timePeriod) {
-    if (!currentData || !currentData.stats[timePeriod]) {
+    try {
+        if (!currentData || !currentData.stats[timePeriod]) {
+            console.error('Missing data for period:', timePeriod, 'Available periods:', currentData ? Object.keys(currentData.stats) : 'No currentData');
+            showError();
+            return;
+        }
+        
+        const stats = currentData.stats[timePeriod];
+        
+        // Update stats
+        document.getElementById('total-plays').textContent = stats.total_plays.toLocaleString();
+        document.getElementById('unique-tracks').textContent = stats.unique_tracks.toLocaleString();
+        document.getElementById('unique-artists').textContent = stats.unique_artists.toLocaleString();
+        document.getElementById('diversity-score').textContent = Math.round(stats.diversity_score * 100) + '%';
+        
+        // Update charts
+        updateCharts(stats);
+        
+        // Update lists
+        updateTopLists(stats);
+        
+        // Load recent activity
+        loadRecentActivity();
+    } catch (error) {
+        console.error('Error in updateDashboard:', error);
         showError();
-        return;
     }
-    
-    const stats = currentData.stats[timePeriod];
-    
-    // Update stats
-    document.getElementById('total-plays').textContent = stats.total_plays.toLocaleString();
-    document.getElementById('unique-tracks').textContent = stats.unique_tracks.toLocaleString();
-    document.getElementById('unique-artists').textContent = stats.unique_artists.toLocaleString();
-    document.getElementById('diversity-score').textContent = Math.round(stats.diversity_score * 100) + '%';
-    
-    // Update charts
-    updateCharts(stats);
-    
-    // Update lists
-    updateTopLists(stats);
-    
-    // Load recent activity
-    loadRecentActivity();
 }
 
 function updateCharts(stats) {
