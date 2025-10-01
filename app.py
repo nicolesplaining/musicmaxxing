@@ -225,6 +225,41 @@ def search_user_activity(username):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/user/<username>/custom-range')
+def get_user_custom_range(username):
+    """Get user data for a custom date range"""
+    try:
+        # Only work with nnicolema user
+        if username != TARGET_USER:
+            return jsonify({'error': f'This app is optimized for {TARGET_USER} only'}), 400
+        
+        start_date = request.args.get('start_date')
+        end_date = request.args.get('end_date')
+        
+        if not start_date or not end_date:
+            return jsonify({'error': 'start_date and end_date parameters required (YYYY-MM-DD format)'}), 400
+        
+        # Use the advanced analytics to get the data
+        scrobbles = advanced_analytics.get_scrobbles_in_range(start_date, end_date)
+        stats = advanced_analytics.calculate_period_stats(scrobbles)
+        
+        return jsonify({
+            'username': username,
+            'start_date': start_date,
+            'end_date': end_date,
+            'total_plays': stats['total_plays'],
+            'unique_tracks': stats['unique_tracks'],
+            'unique_artists': stats['unique_artists'],
+            'diversity_score': stats['diversity_score'],
+            'top_artists': stats['top_artists'],
+            'top_tracks': stats['top_tracks'],
+            'top_albums': stats['top_albums']
+        })
+        
+    except Exception as e:
+        print(f"Error getting custom range data: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/dashboard/<username>')
 def dashboard(username):
     """User dashboard page"""

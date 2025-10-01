@@ -310,6 +310,9 @@ function switchTab(tabName) {
 
 function loadTabData(tabName) {
     switch(tabName) {
+        case 'custom-range':
+            // Custom range doesn't auto-load, user needs to click analyze
+            break;
         case 'patterns':
             loadListeningPatterns();
             break;
@@ -922,7 +925,11 @@ function displayShoegazeAnalytics(data) {
 
 // Utility Functions
 function showLoading(containerId) {
-    document.getElementById(containerId).innerHTML = `
+    const container = document.getElementById(containerId);
+    if (!container) {
+        return;
+    }
+    container.innerHTML = `
         <div class="loading">
             <div class="spinner"></div>
             Loading...
@@ -931,7 +938,11 @@ function showLoading(containerId) {
 }
 
 function showError(containerId, message) {
-    document.getElementById(containerId).innerHTML = `
+    const container = document.getElementById(containerId);
+    if (!container) {
+        return;
+    }
+    container.innerHTML = `
         <div class="text-center text-muted mt-lg">
             ${message}
         </div>
