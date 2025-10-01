@@ -122,56 +122,60 @@ def configure_api():
 
 @app.route('/api/user/<username>')
 def get_user_data(username):
-    """Get user data for nnicolema from smart database with incremental updates"""
+    """Get user data for nnicolema from raw scrobbles data"""
     try:
+        print("🎯 Using ADVANCED ANALYTICS for user data")
         # Only work with nnicolema user
         if username != TARGET_USER:
             return jsonify({'error': f'This app is optimized for {TARGET_USER} only'}), 400
         
-        # Update database with new scrobbles efficiently
-        print("🔄 Checking for new scrobbles...")
-        update_success = smart_db.update_database()
-        if not update_success:
-            print("⚠️  Database update failed, using existing data")
-        
-        # Get stats for different time periods
+        # Calculate date ranges for different time periods
+        now = datetime.now()
         time_periods = {
-            'last_week': 'last_week',
-            'last_month': 'last_month',
-            'last_3_months': 'last_3_months',
-            'last_6_months': 'last_6_months',
-            'last_year': 'last_year',
-            'this_year': 'overall'
+            'last_week': (now - timedelta(days=7), now),
+            'last_month': (now - timedelta(days=30), now),
+            'last_3_months': (now - timedelta(days=90), now),
+            'last_6_months': (now - timedelta(days=180), now),
+            'last_year': (now - timedelta(days=365), now),
+            'this_year': (datetime(now.year, 1, 1), datetime(now.year, 12, 31, 23, 59, 59))
         }
         
         stats_data = {}
-        for period_name, db_period in time_periods.items():
+        total_scrobbles = len(advanced_analytics.scrobbles)
+        
+        for period_name, (start_dt, end_dt) in time_periods.items():
             try:
-                stats = smart_db.get_user_stats(db_period)
-                if stats:
-                    stats_data[period_name] = stats
-                else:
-                    stats_data[period_name] = {'error': f'No data for {period_name}'}
+                # Convert datetime objects to date strings
+                start_date = start_dt.strftime("%Y-%m-%d")
+                end_date = end_dt.strftime("%Y-%m-%d")
+                
+                # Get scrobbles for this period
+                scrobbles = advanced_analytics.get_scrobbles_in_range(start_date, end_date)
+                stats = advanced_analytics.calculate_period_stats(scrobbles)
+                stats_data[period_name] = stats
+                
             except Exception as e:
                 print(f"Error getting stats for {period_name}: {e}")
                 stats_data[period_name] = {'error': str(e)}
-        
-        # Get database info
-        db_info = smart_db.get_database_info()
         
         return jsonify({
             'username': username,
             'user_info': {
                 'name': username,
-                'playcount': db_info.get('total_scrobbles', 0),
+                'playcount': total_scrobbles,
                 'registered': 'Unknown',
                 'url': f'https://www.last.fm/user/{username}'
             },
             'stats': stats_data,
-            'database_info': db_info,
-            'cached': True,
-            'smart_db': True,
-            'incremental_updates': True
+            'database_info': {
+                'total_scrobbles': total_scrobbles,
+                'data_source': 'raw_scrobbles',
+                'last_updated': 'real-time'
+            },
+            'cached': False,
+            'smart_db': False,
+            'incremental_updates': False,
+            'raw_scrobbles': True
         })
         
     except Exception as e:
