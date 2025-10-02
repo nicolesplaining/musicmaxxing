@@ -30,6 +30,10 @@ class AdvancedAnalytics:
         with open(self.data_file, 'r', encoding='utf-8') as f:
             return json.load(f)
     
+    def reload_scrobbles(self):
+        """Reload scrobbles from disk (useful after external updates)"""
+        self.scrobbles = self.load_scrobbles()
+    
     def parse_timestamp(self, timestamp_str: str) -> datetime:
         """Parse Last.fm timestamp format"""
         try:
