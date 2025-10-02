@@ -129,6 +129,12 @@ def get_user_data(username):
         if username != TARGET_USER:
             return jsonify({'error': f'This app is optimized for {TARGET_USER} only'}), 400
         
+        # Update scrobbles with new data from Last.fm API
+        print("🔄 Updating scrobbles data...")
+        update_success = advanced_analytics.update_scrobbles()
+        if not update_success:
+            print("⚠️  Scrobbles update failed, using existing data")
+        
         # Calculate date ranges for different time periods
         now = datetime.now()
         time_periods = {
@@ -242,6 +248,12 @@ def get_user_custom_range(username):
         
         if not start_date or not end_date:
             return jsonify({'error': 'start_date and end_date parameters required (YYYY-MM-DD format)'}), 400
+        
+        # Update scrobbles with new data from Last.fm API
+        print("🔄 Updating scrobbles data for custom range...")
+        update_success = advanced_analytics.update_scrobbles()
+        if not update_success:
+            print("⚠️  Scrobbles update failed, using existing data")
         
         # Use the advanced analytics to get the data
         scrobbles = advanced_analytics.get_scrobbles_in_range(start_date, end_date)

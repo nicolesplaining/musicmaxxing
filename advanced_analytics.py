@@ -6,15 +6,21 @@ Unlimited analytics since we have complete JSON database
 
 import json
 import os
+import requests
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Tuple
 from collections import Counter, defaultdict
 import calendar
 
 class AdvancedAnalytics:
-    def __init__(self, data_file: str = "nnicolema_data/complete_scrobbles.json"):
+    def __init__(self, data_file: str = "nnicolema_data/complete_scrobbles.json", 
+                 api_key: str = "b50c3e94c0f308ce124052b2e9ecfe3e",
+                 username: str = "nnicolema"):
         self.data_file = data_file
+        self.api_key = api_key
+        self.username = username
         self.scrobbles = self.load_scrobbles()
+        self.last_update_file = data_file.replace('.json', '_last_update.txt')
     
     def load_scrobbles(self) -> List[Dict[str, Any]]:
         """Load all scrobbles from JSON file"""
@@ -599,6 +605,142 @@ class AdvancedAnalytics:
             'top_artists': top_artists,
             'top_albums': top_albums
         }
+    
+    def get_last_update_time(self) -> datetime:
+        """Get the timestamp of the last update"""
+        if os.path.exists(self.last_update_file):
+            try:
+                with open(self.last_update_file, 'r') as f:
+                    timestamp_str = f.read().strip()
+                    return datetime.strptime(timestamp_str, '%Y-%m-%d %H:%M:%S')
+            except:
+                pass
+        
+        # If no update file, use the most recent scrobble timestamp
+        if self.scrobbles:
+            for scrobble in self.scrobbles:
+                if scrobble.get('timestamp'):
+                    try:
+                        return self.parse_timestamp(scrobble['timestamp'])
+                    except:
+                        continue
+        
+        # Default to 7 days ago if no data
+        return datetime.now() - timedelta(days=7)
+    
+    def fetch_new_scrobbles(self, from_timestamp: datetime) -> List[Dict[str, Any]]:
+        """Fetch new scrobbles from Last.fm API since the given timestamp"""
+        print(f"🔄 Fetching new scrobbles since {from_timestamp.strftime('%Y-%m-%d %H:%M:%S')}...")
+        
+        new_scrobbles = []
+        page = 1
+        total_pages = 1
+        
+        while page <= total_pages:
+            print(f"📄 Fetching page {page}...")
+            
+            url = f'http://ws.audioscrobbler.com/2.0/'
+            params = {
+                'method': 'user.getrecenttracks',
+                'user': self.username,
+                'api_key': self.api_key,
+                'format': 'json',
+                'page': page,
+                'limit': 1000
+            }
+            
+            try:
+                response = requests.get(url, params=params)
+                data = response.json()
+                
+                if 'recenttracks' in data and 'track' in data['recenttracks']:
+                    tracks = data['recenttracks']['track']
+                    if not isinstance(tracks, list):
+                        tracks = [tracks]
+                    
+                    for track in tracks:
+                        scrobble = {
+                            'name': track.get('name', ''),
+                            'artist': track.get('artist', {}).get('#text', '') if isinstance(track.get('artist'), dict) else track.get('artist', ''),
+                            'album': track.get('album', {}).get('#text', '') if isinstance(track.get('album'), dict) else track.get('album', ''),
+                            'timestamp': track.get('date', {}).get('#text', '') if isinstance(track.get('date'), dict) else track.get('date', ''),
+                            'loved': track.get('loved', '0') == '1',
+                            'playcount': int(track.get('playcount', 0)) if track.get('playcount') else 0
+                        }
+                        
+                        # Check if this scrobble is newer than our cutoff
+                        if scrobble['timestamp']:
+                            try:
+                                scrobble_time = self.parse_timestamp(scrobble['timestamp'])
+                                if scrobble_time > from_timestamp:
+                                    new_scrobbles.append(scrobble)
+                                else:
+                                    print("✅ Reached cutoff time, stopping fetch")
+                                    return new_scrobbles
+                            except:
+                                continue
+                
+                # Check if there are more pages
+                if 'recenttracks' in data and '@attr' in data['recenttracks']:
+                    total_pages = int(data['recenttracks']['@attr'].get('totalPages', 1))
+                
+                page += 1
+                
+            except Exception as e:
+                print(f"❌ Error fetching page {page}: {e}")
+                break
+        
+        print(f"✅ Fetched {len(new_scrobbles)} new scrobbles")
+        return new_scrobbles
+    
+    def update_scrobbles(self) -> bool:
+        """Update scrobbles database with new data from Last.fm API"""
+        try:
+            print("🔄 Checking for new scrobbles...")
+            last_update = self.get_last_update_time()
+            new_scrobbles = self.fetch_new_scrobbles(last_update)
+            
+            if not new_scrobbles:
+                print("📭 No new scrobbles found")
+                return True
+            
+            # Remove duplicates based on timestamp and track info
+            existing_timestamps = set()
+            for scrobble in self.scrobbles:
+                if scrobble.get('timestamp'):
+                    existing_timestamps.add(scrobble['timestamp'])
+            
+            # Add only truly new scrobbles
+            truly_new = []
+            for scrobble in new_scrobbles:
+                if scrobble.get('timestamp') and scrobble['timestamp'] not in existing_timestamps:
+                    truly_new.append(scrobble)
+            
+            if truly_new:
+                # Combine new scrobbles with existing ones
+                all_scrobbles = truly_new + self.scrobbles
+                
+                # Save updated data
+                with open(self.data_file, 'w', encoding='utf-8') as f:
+                    json.dump(all_scrobbles, f, indent=2, ensure_ascii=False)
+                
+                # Update the last update timestamp
+                with open(self.last_update_file, 'w') as f:
+                    f.write(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+                
+                # Reload scrobbles
+                self.scrobbles = all_scrobbles
+                
+                print(f"📈 Added {len(truly_new)} new scrobbles to database")
+                print(f"📊 Total scrobbles now: {len(self.scrobbles):,}")
+                return True
+            else:
+                print("📭 No new unique scrobbles to add")
+                return True
+                
+        except Exception as e:
+            print(f"❌ Error updating scrobbles: {e}")
+            return False
 
 # Global instance
 advanced_analytics = AdvancedAnalytics()
